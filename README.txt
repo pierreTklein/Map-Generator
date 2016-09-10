@@ -7,5 +7,3 @@ Second from left– zoom! Zoom in and out of the map.
 
 Last from left– refresh the map if the map didn’t reload properly after changing settings.
 
-
-

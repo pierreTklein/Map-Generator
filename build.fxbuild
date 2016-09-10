@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ASCII"?>
-<anttasks:AntTask xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:anttasks="http://org.eclipse.fx.ide.jdt/1.0" buildDirectory="/Users/appleuser/Desktop/NatureSimulator2.0">
-  <deploy height="900" placeholderref="1001" placeholderid="1001" width="900" splashImage="preloaders/map 1.png">
+<anttasks:AntTask xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:anttasks="http://org.eclipse.fx.ide.jdt/1.0" buildDirectory="/Users/appleuser/Desktop/2016/Genetics/NatureSimulator2.1/build">
+  <deploy height="900" placeholderref="1001" placeholderid="1001" width="900" splashImage="preloaders/map 1.png" packagingFormat="dmg" verbose="true">
     <application name="NatureSimulator2.1" mainclass="mapChooser.mapChooserUI" preloaderclass="preloaders.mapPreloader" version="0.9" toolkit="fx"/>
     <info title="Map Generator" vendor="Evoloot"/>
   </deploy>

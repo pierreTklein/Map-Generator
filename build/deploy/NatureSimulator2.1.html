@@ -1,0 +1,43 @@
+<html><head>
+  <SCRIPT src="http://java.com/js/dtjava.js"></SCRIPT>
+<script>
+    function launchApplication(jnlpfile) {
+        dtjava.launch(            {
+                url : 'NatureSimulator2.1.jnlp'
+            },
+            {
+                javafx : '8.0+'
+            },
+            {}
+        );
+        return false;
+    }
+</script>
+
+<script>
+    function javafxEmbedfxApplication() {
+        dtjava.embed(
+            {
+                id : 'fxApplication',
+                url : 'NatureSimulator2.1.jnlp',
+                placeholder : '1001',
+                width : '900',
+                height : '900'
+            },
+            {
+                javafx : '8.0+'
+            },
+            {}
+        );
+    }
+    <!-- Embed FX application into web page once page is loaded -->
+    dtjava.addOnloadCallback(javafxEmbedfxApplication);
+</script>
+
+</head><body>
+<h2>Test page for <b>Map Generator</b></h2>
+  <b>Webstart:</b> <a href='NatureSimulator2.1.jnlp' onclick="return launchApplication('NatureSimulator2.1.jnlp');">click to launch this app as webstart</a><br><hr><br>
+
+  <!-- Applet will be inserted here -->
+  <div id='1001'></div>
+</body></html>
