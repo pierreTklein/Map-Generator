@@ -6,12 +6,12 @@ import javafx.scene.canvas.Canvas;
 
 public class MapOverlay {
 	private Map map = new Map();
-	private double[] coord = new double[2];
+	private double[] coord = new double[2]; // coordinates are: (y-value,x-value) 
 	private Canvas canvas;
 	private float frequency = (float) 0.002;
 	private float defaultScale = 3;
 	private float currentScale = defaultScale;
-	private float moveFactor = (float) 1; //the size of the jump when moving around the map, measured in canvas sizes (1/2 = 1/2 of a canvas size jump)
+	private float moveFactor = (float) 0.5; //the size of the jump when moving around the map, measured in canvas sizes (1/2 = 1/2 of a canvas size jump)
 	
 	/**Settings that determine movement of map**/
 	private boolean translation = true; //can move around the map
@@ -114,18 +114,18 @@ public class MapOverlay {
 	/**The next methods involve moving around the map!**/
 	public void moveRight(){
 		if(translation){
-			coord[0] += this.canvas.getWidth() * currentScale * moveFactor;
+			coord[1] += this.canvas.getWidth() * currentScale * moveFactor;
 			updateCanvas(currentScale);
 		}
 	}
 	public void moveLeft(){
 		if(translation){
-			if(coord[0] - this.canvas.getWidth() * currentScale >= 0){
-				coord[0] -= this.canvas.getWidth() * currentScale * moveFactor;
+			if(coord[1] - this.canvas.getWidth() * currentScale >= 0){
+				coord[1] -= this.canvas.getWidth() * currentScale * moveFactor;
 				updateCanvas(currentScale);
 			}
 			else{
-				coord[0] = 0;
+				coord[1] = 0;
 				updateCanvas(currentScale);
 			}
 
@@ -133,18 +133,18 @@ public class MapOverlay {
 	}
 	public void moveDown(){
 		if(translation){
-			coord[1] += this.canvas.getHeight() * currentScale * moveFactor;
+			coord[0] += this.canvas.getHeight() * currentScale * moveFactor;
 			updateCanvas(currentScale);
 		}
 	}
 	public void moveUp(){
 		if(translation){
-			if(coord[1] - this.canvas.getHeight() * currentScale >= 0){
-				coord[1] -= this.canvas.getHeight() * currentScale * moveFactor;
+			if(coord[0] - this.canvas.getHeight() * currentScale >= 0){
+				coord[0] -= this.canvas.getHeight() * currentScale * moveFactor;
 				updateCanvas(currentScale);
 			}
 			else{
-				coord[1] = 0;
+				coord[0] = 0;
 				updateCanvas(currentScale);
 			}
 		}
