@@ -29,22 +29,19 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
 public class mapChooserUI extends Application{
 	public void start(Stage primaryStage) throws Exception {
-		Map map = new Map();
-		primaryStage = getMapView(map);
+		primaryStage = getMapView();
 		primaryStage.show();
 	}
 	
 	
-	public Stage getSettingsView(Map map){
+	public Stage getSettingsView(MapOverlay mapOverlay){
 		Group root = new Group();
 		Scene menu = new Scene(root);
 		Stage primaryStage = new Stage();
@@ -55,7 +52,7 @@ public class mapChooserUI extends Application{
 		/**slider to change Water level**/
 		 Label waterLabel1 = new Label("Water level:	");
 
-		 Slider waterLevel = new Slider(0.1, 10, map.getWaterLevel());
+		 Slider waterLevel = new Slider(0.1, 10, mapOverlay.getMap().getWaterLevel());
 		 waterLevel.setShowTickLabels(true);
 		 waterLevel.setMajorTickUnit(1);
 		 waterLevel.setBlockIncrement(0.1);
@@ -70,7 +67,7 @@ public class mapChooserUI extends Application{
 		 Label moistureLabel1 = new Label("Moisture level:	");
 
 		 
-		 Slider moistureLevel = new Slider(0.1, 10, map.getMoistureLevel());
+		 Slider moistureLevel = new Slider(0.1, 10,  mapOverlay.getMap().getMoistureLevel());
 		 moistureLevel.setShowTickLabels(true);
 		 moistureLevel.setMajorTickUnit(1);
 		 moistureLevel.setBlockIncrement(0.1);
@@ -80,6 +77,36 @@ public class mapChooserUI extends Application{
 
 		 HBox moisture = new HBox();
 		 moisture.getChildren().addAll(moistureLabel1,moistureLevel,moistureLabel2);
+		 
+		 /**Translation and zooming properties**/
+		 Label translation = new Label("Set Translation:");
+		 Button translationBtn = new Button("" + mapOverlay.isTranslation());
+		 translationBtn.setOnAction(new EventHandler<ActionEvent>(){
+
+			@Override
+			public void handle(ActionEvent event) {
+				// TODO Auto-generated method stub
+				boolean newVal = !Boolean.valueOf(translationBtn.getText());
+				translationBtn.setText("" + newVal);
+			}
+			 
+		 });
+		 VBox translations = new VBox(translation,translationBtn);
+		 
+		 Label zooming = new Label("Set Zooming:");
+		 Button zoomingBtn = new Button("" + mapOverlay.isScaling());
+		 zoomingBtn.setOnAction(new EventHandler<ActionEvent>(){
+
+			@Override
+			public void handle(ActionEvent event) {
+				// TODO Auto-generated method stub
+				boolean newVal = !Boolean.valueOf(zoomingBtn.getText());
+				zoomingBtn.setText("" + newVal);
+			}
+			 
+		 });
+		 VBox zoomings = new VBox(zooming,zoomingBtn);
+		 HBox tANdZprop = new HBox(translations,zoomings);
 
 		 /**Two options: cancel, or confirm selection**/
 		 Button cancel = new Button("cancel");
@@ -99,44 +126,50 @@ public class mapChooserUI extends Application{
 			public void handle(ActionEvent event) {
 				// TODO Auto-generated method stub
 				Map newMap = new Map((float)waterLevel.getValue(),(float)moistureLevel.getValue());
-				Map.transferValues(newMap, map);
+				mapOverlay.setCurrentCoord(new double[]{0,0});
+				mapOverlay.setMap(newMap);
+				mapOverlay.setScaling(Boolean.valueOf(zoomingBtn.getText()));
+				mapOverlay.setTranslation(Boolean.valueOf(translationBtn.getText()));
+
 				primaryStage.close();
 			}
 			 
 		 });
+		 
+		 
 
 		 
 		 /**Putting it all together:**/
-		 HBox buttons = new HBox();
-		 buttons.getChildren().addAll(cancel,confirm);
+		 HBox confirmationButtons = new HBox();
+		 confirmationButtons.getChildren().addAll(cancel,confirm);
 		 
 		 VBox choices = new VBox();
 		 choices.getChildren().addAll(water,moisture);
 		 
 		 VBox total = new VBox();
-		 total.getChildren().addAll(choices,buttons);
+		 total.getChildren().addAll(choices,confirmationButtons);
 
 		 root.getChildren().add(total);
 		 primaryStage.setResizable(false);
+		 primaryStage.setAlwaysOnTop(true);
 		 return primaryStage;
 		 
 		
 	}
 	
 	
-	public Stage getMapView(Map map){
+	public Stage getMapView(){
 		Group root = new Group();
 		Scene simulator = new Scene(root);
 		Stage primaryStage = new Stage();
 		primaryStage.setTitle("map chooser");
 		primaryStage.setScene(simulator);
-		Canvas mapCanvas = new Canvas(900,900);
+		Canvas mapCanvas = new Canvas(500,500);
 		root.getChildren().add(mapCanvas);
 		HBox overlay = new HBox();
 		
-		
-		float frequency = (float) 0.002;
-		
+		MapOverlay mapOverlay = new MapOverlay(mapCanvas);
+				
 		/**Menu bar at the top of application**/
 		MenuBar menu = new MenuBar();
 		Menu menuFile = new Menu("File");
@@ -150,24 +183,24 @@ public class mapChooserUI extends Application{
 		});
 		
 		/**slider to change zoom factor**/
-		 Slider slider = new Slider(1, 5, 3);
+		 Slider slider = new Slider(1, 6, 3);
 		 slider.setShowTickLabels(true);
 		 slider.setMajorTickUnit(1);
 		 slider.setBlockIncrement(0.5);
+		 slider.setOnMouseDragged(new EventHandler<MouseEvent>(){
+				@Override
+				public void handle(MouseEvent event) {
+					mapOverlay.updateCanvas((float)slider.getValue());
+				}
+			});
 		 slider.setOnMouseClicked(new EventHandler<MouseEvent>(){
 				@Override
 				public void handle(MouseEvent event) {
-					map.generateMapWithBiome(0,0,frequency, (float) slider.getValue(), mapCanvas,GradientType.DISCRETE);
+					mapOverlay.updateCanvas((float)slider.getValue());
 				}
 			});
 
-		 
-		 slider.setOnKeyTyped(new EventHandler<KeyEvent>(){
-				@Override
-				public void handle(KeyEvent event) {			
-					map.generateMapWithBiome(0,0,frequency, (float) slider.getValue(), mapCanvas,GradientType.DISCRETE);
-				}
-			});
+
 		 /**button to refresh current map, for when you select to create new map via "newMap"**/
 		 Button refresh = new Button("Refresh map");
 		 
@@ -176,7 +209,7 @@ public class mapChooserUI extends Application{
 			@Override
 			public void handle(ActionEvent event) {
 				// TODO Auto-generated method stub
-				map.generateMapWithBiome(0,0,frequency, (float) slider.getValue(), mapCanvas,GradientType.DISCRETE);
+				mapOverlay.updateCanvas((float)slider.getValue());
 			}
 		});
 		 /**menu item to create new map by controlling water level and biome**/
@@ -186,7 +219,7 @@ public class mapChooserUI extends Application{
 		 newMap.setOnAction(new EventHandler<ActionEvent>(){
 			@Override
 			public void handle(ActionEvent event) {
-				Stage settings = getSettingsView(map);
+				Stage settings = getSettingsView(mapOverlay);
 				settings.show();
 			}
 		 });
@@ -199,8 +232,7 @@ public class mapChooserUI extends Application{
 		 reset.setOnAction(new EventHandler<ActionEvent>(){
 			@Override
 			public void handle(ActionEvent event) {
-				map.setRandomNoise();
-				map.generateMapWithBiome(0,0,frequency, (float) slider.getValue(), mapCanvas,GradientType.DISCRETE);
+				mapOverlay.setRandomMap();
 			}
 		 });
 
@@ -212,10 +244,18 @@ public class mapChooserUI extends Application{
 			@Override
 			public void handle(ActionEvent event) {
 				try {
-					FileOutputStream fos = new FileOutputStream("map saves/map_" + System.currentTimeMillis() + ".dat");
-					ObjectOutputStream oos = new ObjectOutputStream(fos);
-					oos.writeObject(map);
-					oos.close();
+					FileChooser fileChooser = new FileChooser();
+
+					FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("dat files (*.dat)", "*.dat");
+					fileChooser.getExtensionFilters().add(extFilter);
+					File mapSaveFile = fileChooser.showSaveDialog(primaryStage);
+					if(mapSaveFile!=null){
+						FileOutputStream fos = new FileOutputStream(mapSaveFile);
+						ObjectOutputStream oos = new ObjectOutputStream(fos);
+						oos.writeObject(mapOverlay.getMap());
+						oos.close();
+						mapSaveFile.setWritable(false);	
+					}
 				}catch(Exception e){
 				}
 			}
@@ -238,9 +278,8 @@ public class mapChooserUI extends Application{
 						ObjectInputStream ois = new ObjectInputStream(fis);
 						Object potentialMap = ois.readObject();
 						if(potentialMap instanceof Map){
-							Map newMap = (Map) potentialMap;
-							Map.transferValues(newMap, map);
-							map.generateMapWithBiome(0,0,frequency, (float) slider.getValue(), mapCanvas,GradientType.DISCRETE);
+							Map map = (Map) potentialMap;
+							slider.setValue(mapOverlay.setMap(map));
 						}
 						else{
 							System.out.println("error, object not instance of map");
@@ -291,7 +330,7 @@ public class mapChooserUI extends Application{
 				}
 				views.clear();
 				if(event.getButton() == MouseButton.SECONDARY){
-					Stage zoomedView = getZoomInNewWindow(map,frequency,(float)slider.getValue(), (int)event.getSceneX(), (int)event.getSceneY());
+					Stage zoomedView = getZoomInNewWindow(mapOverlay, new int[] {(int)event.getSceneX(), (int)event.getSceneY()});
 					zoomedView.show();
 					views.add(zoomedView);
 				}
@@ -310,6 +349,29 @@ public class mapChooserUI extends Application{
 				}
 		 });
 		 root.getChildren().add(mouseLocation);
+
+		 
+		 /**for when the user asks to move around the map**/
+		 root.setOnKeyTyped(new EventHandler<KeyEvent>() {
+
+			@Override
+			public void handle(KeyEvent event) {
+				// TODO Auto-generated method stub
+				if(event.getCharacter().equals("d")){
+					mapOverlay.moveRight();
+				}
+				else if(event.getCharacter().equals("a")){
+					mapOverlay.moveLeft();
+				}
+				else if(event.getCharacter().equals("w")){
+					mapOverlay.moveUp();
+				}
+				else if(event.getCharacter().equals("s")){
+					mapOverlay.moveDown();
+
+				}
+			}
+		});
 		 menuFile.getItems().addAll(exit,newMap,reset,save,load,saveImage);
 		 menu.getMenus().add(menuFile);
 		 
@@ -317,20 +379,18 @@ public class mapChooserUI extends Application{
 		 root.getChildren().addAll(overlay);
 
 		 /**initial map load**/
-		map.generateMapWithBiome(0,0,frequency, (float) slider.getValue(), mapCanvas,GradientType.DISCRETE);
+		
 		return primaryStage;
 	}
 	
 	//will create a map that has the same geography as the geography that was clicked, in a new window.
-	public Stage getZoomInNewWindow(Map map, float step, float scale, int xStart, int yStart){
-		int zoomFactor = 4;
+	public Stage getZoomInNewWindow(MapOverlay mapOverlay, int[] mouseCoord){
 	    Stage primaryStage = new Stage();
 		Group root = new Group();
 		Scene simulator = new Scene(root);
-		primaryStage.setTitle("zoomed map:" + xStart + "," + yStart);
+		primaryStage.setTitle("zoomed map:" + mouseCoord[0] + "," + mouseCoord[1]);
 		primaryStage.setScene(simulator);
-		Canvas mapCanvas = new Canvas(500,500);
-		map.generateMapWithBiome((float)(yStart-mapCanvas.getWidth()/(2*zoomFactor))*(step), (float)(xStart-mapCanvas.getHeight()/(2*zoomFactor))*(step), step/zoomFactor, scale, mapCanvas,GradientType.DISCRETE);
+		Canvas mapCanvas = mapOverlay.getZoomedInView(mouseCoord);		
 		root.getChildren().add(mapCanvas);
 		primaryStage.setAlwaysOnTop(true);
 		primaryStage.setResizable(false);

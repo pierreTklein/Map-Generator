@@ -32,7 +32,7 @@ public class Map implements Serializable{
 
 	/**Number of frequencies this map contains, which is a factor on how clear the map looks**/
 	private final float frequencies = 20;
-	
+		
 	public Map(){
 		setRandomNoise();
 		setRandomWaterLevel();
@@ -131,20 +131,23 @@ public class Map implements Serializable{
 	public void generateMapWithBiome(float xStart, float yStart, float step, float scale, Canvas mapCanvas, GradientType gradientType){
 		GraphicsContext gc = mapCanvas.getGraphicsContext2D();
 		PixelWriter writer = gc.getPixelWriter();
+	//	System.out.println(xStart * step + "->" + (xStart *step + step * scale * mapCanvas.getWidth()));
+	//	System.out.println(yStart * step + "->" + (yStart *step + step * scale * mapCanvas.getHeight()));
 
+		
 		float[][] elevation = generateVals(xStart, yStart, step, scale, elevationNoise, moistureLevel, mapCanvas);
 		float[][] biome = generateVals(xStart, yStart, step, scale, biomeNoise, waterLevel, mapCanvas);
 		
 		FileInputStream path;
-		boolean found = false;
+		boolean found;
 		Image biomeMap = null;
 		try {
 			if(gradientType == GradientType.SMOOTH){
-				path = new FileInputStream("biome maps/biome-lookup-smooth.png");
+				path = new FileInputStream("resources/biome maps/biome-lookup-smooth.png");
 
 			}
 			else{
-				path = new FileInputStream("biome maps/biome-lookup-discrete.png");
+				path = new FileInputStream("resources/biome maps/biome-lookup-discrete.png");
 			}
 			biomeMap = new Image(path);
 			found = true;
@@ -156,6 +159,8 @@ public class Map implements Serializable{
 		for(int i = 0; i < mapCanvas.getHeight(); i++){
 			for(int j = 0; j < mapCanvas.getWidth(); j++){
 				Color c;
+				//c = this.greyScale(elevation[i][j]);
+			
 				if(found){
 					c = setBiome(elevation[i][j],biome[i][j],biomeMap);
 				} else{
@@ -168,19 +173,21 @@ public class Map implements Serializable{
 	}
 	private float[][] generateVals(float xStart, float yStart, float step, float scale, PerlinNoiseGenerator noise, float offset, Canvas mapCanvas){
 		float[][] vals = new float[(int) mapCanvas.getWidth()][(int) mapCanvas.getHeight()];
-		float xOff = xStart;
-		float yOff = yStart;
+		float xOff = xStart*step;
+		float yOff = yStart*step;
+		System.out.println(xOff + "	" + yOff);
 		for(int i = 0; i < mapCanvas.getHeight(); i++){
-			xOff = xStart;
+			xOff = xStart*step;
 			for(int j = 0; j < mapCanvas.getWidth(); j++){
 				float n = getNoise(xOff,yOff,noise,scale);
 				n = map(n, -1,1,0,1);
 				n = (float) Math.pow(n,offset);
 				vals[i][j] = n;
-				xOff+=step;
+				xOff+=step*scale;
 			}
-			yOff+=step;
+			yOff+= step*scale;
 		}
+		System.out.println(xOff + "	" + yOff + "\n---------" );
 		return vals;
 
 	}
@@ -191,7 +198,9 @@ public class Map implements Serializable{
 		
 		float curFrequency = 1;
 		for(int i = 0; i < frequencies; i++){
-			n+= weight * noise.noise2(scale * curFrequency * x, scale  * curFrequency * y);
+			n+= weight * noise.noise2(curFrequency * x, curFrequency * y);
+
+//			n+= weight * noise.noise2(scale * curFrequency * x, scale  * curFrequency * y);
 			weight /= 2;
 			curFrequency += 2;
 		}
@@ -201,25 +210,36 @@ public class Map implements Serializable{
 	
 	
 	private Color setBiome(float elevation, float moisture, Image biomeMap){
-		if(biomeMap != null){
+		try{
+			if(biomeMap != null){
+				int width = (int) biomeMap.getWidth();
+				int height = (int) biomeMap.getHeight();
+				
+				int e = (int) map(elevation,0,1,0,height-1);
+				int m = (int) map(moisture,0,1,0,width-1);
+				if(e >= biomeMap.getHeight()){
+					e = height-1;
+				}
+				if(m >= biomeMap.getWidth()){
+					m = width-1;
+				}
+				PixelReader p = biomeMap.getPixelReader();
+				Color c = p.getColor(e, m);
+				return c;
+
+			}
+			else{
+				return colored(elevation);
+			}			
+		}
+		catch (IndexOutOfBoundsException e){
+			e.printStackTrace();
 			int width = (int) biomeMap.getWidth();
 			int height = (int) biomeMap.getHeight();
-			
-			int x = (int) map(elevation,0,1,0,height-1);
-			int y = (int) map(moisture,0,1,0,width-1);
-			if(x > biomeMap.getHeight()){
-				x = (int) (biomeMap.getHeight()-1);
-			}
-			if(y > biomeMap.getWidth()){
-				y = (int) (biomeMap.getWidth()-1);
-			}
-			PixelReader p = biomeMap.getPixelReader();
-			Color c = p.getColor(x, y);
-			return c;
-
-		}
-		else{
+			System.out.println(map(elevation,0,1,0,height-1));
+			System.out.println(map(moisture,0,1,0,width-1));
 			return colored(elevation);
+
 		}
 	}
 	
@@ -232,11 +252,12 @@ public class Map implements Serializable{
 			return Color.hsb(120, n, 1, 1);
 		}
 	}
-
+	
 	private Color greyScale(float n){
 		float greyScale = n; //map(n,-1,1,0,1);
 		return Color.gray(greyScale, 1);
 	}
+	
 	private float map(float value, float low, float high, float newLow, float newHigh){
 		float normalized = value - low;
 		float domain = high - low;
