@@ -3,6 +3,7 @@ package mapChooser;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -25,6 +26,8 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Slider;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -125,7 +128,9 @@ public class mapChooserUI extends Application{
 			@Override
 			public void handle(ActionEvent event) {
 				// TODO Auto-generated method stub
-				Map newMap = new Map((float)waterLevel.getValue(),(float)moistureLevel.getValue());
+				float wl = (float)(waterLevel.getValue());
+				float ml = (float) (moistureLevel.getValue());
+				Map newMap = new Map(wl, ml);
 				mapOverlay.setCurrentCoord(new double[]{0,0});
 				mapOverlay.setMap(newMap);
 				mapOverlay.setScaling(Boolean.valueOf(zoomingBtn.getText()));
@@ -159,17 +164,26 @@ public class mapChooserUI extends Application{
 	
 	
 	public Stage getMapView(){
+		final int canvasSize = 500;
+		
 		Group root = new Group();
 		Scene simulator = new Scene(root);
 		Stage primaryStage = new Stage();
 		primaryStage.setTitle("map chooser");
 		primaryStage.setScene(simulator);
-		Canvas mapCanvas = new Canvas(500,500);
+		primaryStage.setResizable(false);
+		Canvas mapCanvas = new Canvas(canvasSize,canvasSize);
+		primaryStage.setWidth(canvasSize);
+		primaryStage.setHeight(canvasSize);
+
 		root.getChildren().add(mapCanvas);
 		HBox overlay = new HBox();
 		
-		MapOverlay mapOverlay = new MapOverlay(mapCanvas);
-				
+		Group spriteImv = new Group();
+		root.getChildren().add(spriteImv);
+		
+		MapOverlay mapOverlay = new MapOverlay(mapCanvas,spriteImv);
+		
 		/**Menu bar at the top of application**/
 		MenuBar menu = new MenuBar();
 		Menu menuFile = new Menu("File");
@@ -330,7 +344,7 @@ public class mapChooserUI extends Application{
 				}
 				views.clear();
 				if(event.getButton() == MouseButton.SECONDARY){
-					Stage zoomedView = getZoomInNewWindow(mapOverlay, new int[] {(int)event.getSceneX(), (int)event.getSceneY()});
+					Stage zoomedView = getZoomInNewWindow(mapOverlay, mapOverlay.getMouseCoordInWorld(new int[]{(int) event.getSceneX(), (int) event.getSceneY()}));
 					zoomedView.show();
 					views.add(zoomedView);
 				}
@@ -343,9 +357,10 @@ public class mapChooserUI extends Application{
 
 				@Override
 				public void handle(MouseEvent event) {
-					mouseLocation.setLayoutX(event.getSceneX());
-					mouseLocation.setLayoutY(event.getSceneY());
-					mouseLocation.setText(event.getSceneX() + "," + event.getSceneY());
+					mouseLocation.setLayoutX(event.getSceneX() + 10);
+					mouseLocation.setLayoutY(event.getSceneY() + 10);
+					int[] coords = mapOverlay.getMouseCoordInWorld(new int[] {(int) event.getSceneX(), (int) event.getSceneY()});
+					mouseLocation.setText( coords[0]+ "," + coords[1] + '\n' + mapOverlay.getBiomeNameWORLD_COORDS(coords));
 				}
 		 });
 		 root.getChildren().add(mouseLocation);
@@ -382,15 +397,18 @@ public class mapChooserUI extends Application{
 		
 		return primaryStage;
 	}
+
 	
 	//will create a map that has the same geography as the geography that was clicked, in a new window.
 	public Stage getZoomInNewWindow(MapOverlay mapOverlay, int[] mouseCoord){
 	    Stage primaryStage = new Stage();
 		Group root = new Group();
 		Scene simulator = new Scene(root);
-		primaryStage.setTitle("zoomed map:" + mouseCoord[0] + "," + mouseCoord[1]);
+		
+		int[] coordsInWorld = mapOverlay.getMouseCoordInWorld(mouseCoord);
+		primaryStage.setTitle("zoomed map:" + coordsInWorld[0] + "," + coordsInWorld[1]);
 		primaryStage.setScene(simulator);
-		Canvas mapCanvas = mapOverlay.getZoomedInView(mouseCoord);		
+		Canvas mapCanvas = mapOverlay.getZoomedInView(coordsInWorld);		
 		root.getChildren().add(mapCanvas);
 		primaryStage.setAlwaysOnTop(true);
 		primaryStage.setResizable(false);

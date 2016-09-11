@@ -3,7 +3,7 @@ package physics;
 import javafx.scene.shape.Line;
 
 public class Vector {
-	private double[] vector = {0,0,0};
+	private double[] vector = {0,0};
 	
 	public Vector(){
 	}
@@ -14,7 +14,7 @@ public class Vector {
 	}
 	
 	public Vector(double x, double y){
-		double[] v  ={x,y,0};
+		double[] v  ={x,y};
 		this.vector = v;
 	}
 	public Vector(double[] start, double[] end){
@@ -45,7 +45,6 @@ public class Vector {
 	public void setVals(double x, double y, double z){
 		this.vector[0] = x;
 		this.vector[1] = y;
-		this.vector[2] = z;
 
 	}
 	public void setVals(double[] vector){
@@ -193,16 +192,8 @@ public class Vector {
 	public void setY(double y){
 		this.vector[1] = y;
 	}
-	public void setZ(double z){
-		this.vector[2] = z;
-	}
-
 	public double getY(){
 		return vector[1];
-	}
-
-	public double getZ(){
-		return vector[2];
 	}
 	public double[] getVals(){
 		double[] b = new double[this.vector.length];
@@ -217,7 +208,7 @@ public class Vector {
 	}
 	
 	public String toString(){
-		return "[ "+this.getX() + " , " + this.getY()+" , " + this.getZ() + " ]";
+		return "[ "+this.getX() + " , " + this.getY() + "]";
 	}
 	
 	public static Vector sub(Vector one, Vector two){

@@ -5,7 +5,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import physics.Vector;
 
-public class Sprite {
+public class Sprite implements Comparable<Sprite>{
 	/**Location of sprite**/
 	private Vector location; //coordinates are in (x,y)
 	
@@ -40,7 +40,7 @@ public class Sprite {
 	}
 	
 	public void scaleImv(float scale){
-        imv.setFitWidth(scale);
+        imv.setFitWidth(scale * this.dimensions[0]);
         imv.setPreserveRatio(true);
 	}
 	
@@ -52,20 +52,16 @@ public class Sprite {
 		return this.dimensions;
 	}
 	//the Double[] UL are the coordinates of the upper left corner of the box, and LR are the lower right coords
-	public void render(double[] UL, double[] LR, double[] mapDimensions, float scale, Group group){
+	public void render(double[] UL, double[] LR, double[] canvasSize, float scale, Group group){
 		if(group.getChildren().contains(imv)){
 			group.getChildren().remove(imv);
 		}
-		
-		scaleImv((float) (dimensions[0] * scale));
-		Vector newLayout = new Vector(UL,location.getVals());
-		newLayout.normalize();
-		//TODO: figure out math to make sure that imv is in the right spot
-		if(!((UL[0] >= location.getX() && UL[1] >= location.getY()) || (LR[0] <= location.getX() && LR[1] <= location.getY()))){
-			group.getChildren().add(imv);
-			imv.setLayoutX(newLayout.getX() * mapDimensions[0]);
-			imv.setLayoutY(newLayout.getY() * mapDimensions[1]);
-		}
+		this.scaleImv(1/scale);
+		float imvX = map((float)location.getX(),(float)UL[0],(float)LR[0],(float)0,(float)canvasSize[0]);
+		float imvY = map((float)location.getY(),(float)UL[1],(float)LR[1],(float)0,(float)canvasSize[1]);
+		imv.setLayoutX(imvX);
+		imv.setLayoutY(imvY);
+		group.getChildren().add(imv);
 	}
 
 	public Vector getLocation() {
@@ -75,4 +71,35 @@ public class Sprite {
 	public void setLocation(Vector location) {
 		this.location = location;
 	}	
+	
+	public int getMaxX(){
+		int maxX = (int) (imv.getLayoutX()+imv.getFitWidth());
+		return maxX;
+	}
+	public int getMaxY(){
+		int maxY = (int) (imv.getLayoutY()+imv.getFitHeight());
+		return maxY;
+	}
+	public int compareTo(Sprite other) {
+
+		int compareQuantity = ((Sprite) other).getMaxY();
+
+		//ascending order
+		return this.getMaxY() - compareQuantity;
+
+		//descending order
+		//return compareQuantity - this.quantity;
+
+	}
+
+
+	
+	private float map(float value, float low, float high, float newLow, float newHigh){
+		float normalized = value - low;
+		float domain = high - low;
+		float scale = normalized / domain;
+		float newValue = (newHigh-newLow) * scale + newLow; //(D-C) * ((X-A)/(B-A)) + C 
+		return newValue;
+	}
+
 }
