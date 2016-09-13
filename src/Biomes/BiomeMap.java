@@ -7,18 +7,17 @@ import javafx.scene.paint.Color;
 public class BiomeMap {
 	ArrayList<Biome> biomes = new ArrayList<Biome>();
 	public BiomeMap() {
-		// TODO Auto-generated constructor stub
 		genericWorld();
 	}
-	//(Color color, int[] elevationRange, int[] moistureRange, String name)
+
 	public void genericWorld(){
 		biomes.clear();
 		//elevation 0:
 		double elevation0 = 0;
 		//elevation level 1:
 		double elevation1 = 0.1;
-		Biome ocean = new Biome(Color.rgb(68, 68, 122),new double[]{elevation0,elevation1}, new double[]{0,1},false, "OCEAN");
-		biomes.add(ocean);
+		Biome water = new Biome(Color.rgb(68, 68, 122),new double[]{elevation0,elevation1}, new double[]{0,1},false, "WATER");
+		biomes.add(water);
 		//elevation level 2:
 		double elevation2 = 0.12;
 		Biome beach = new Biome(Color.rgb(160, 144, 120),new double[]{elevation1,elevation2}, new double[]{0,1},false, "BEACH");
@@ -65,9 +64,8 @@ public class BiomeMap {
 		biomes.add(scorched);
 	}
 	
-	
-	//takes elevation and moisture and returns the biome
-	//returns null if the there is no biome that meets the criteria.
+	/**Takes elevation and moisture as parameters and returns the biome.
+	NOTE: returns null if the there is no biome that meets the criteria.**/
 	public Biome getBiome(double e, double m){
 		for(Biome b : biomes){
 			double[] eRange = b.getElevationRange();
@@ -81,7 +79,13 @@ public class BiomeMap {
 	public ArrayList<Biome> getBiomes(){
 		return biomes;
 	}
+	//e and m need to be between 0 and 1.
 	public Color getColor(double e, double m){
+		e = e > 1 ? 1 : e;
+		e = e < 0 ? 0 : e;
+		m = m > 1 ? 1 : m;
+		m = m < 0 ? 0 : m;
+		
 		Biome b = getBiome(e,m);
 		if(b != null){
 			Color c = getBiome(e,m).getColor();

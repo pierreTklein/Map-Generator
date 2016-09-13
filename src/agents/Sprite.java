@@ -71,6 +71,19 @@ public class Sprite implements Comparable<Sprite>{
 	public void setLocation(Vector location) {
 		this.location = location;
 	}	
+	public int[] getLowerLeft(){
+		int[] lowerLeft = new int[2];
+		lowerLeft[0] = (int) (imv.getLayoutX() + imv.getFitWidth());
+		lowerLeft[1] = (int) imv.getLayoutY();
+		return lowerLeft;
+	}
+	public int[] getLowerRight(){
+		int[] lowerRight = new int[2];
+		lowerRight[0] = (int) (imv.getLayoutX());
+		lowerRight[1] = (int) (imv.getLayoutY() + imv.getFitHeight());
+		return lowerRight;
+	}
+
 	
 	public int getMaxX(){
 		int maxX = (int) (imv.getLayoutX()+imv.getFitWidth());

@@ -344,9 +344,9 @@ public class mapChooserUI extends Application{
 				}
 				views.clear();
 				if(event.getButton() == MouseButton.SECONDARY){
-					Stage zoomedView = getZoomInNewWindow(mapOverlay, mapOverlay.getMouseCoordInWorld(new int[]{(int) event.getSceneX(), (int) event.getSceneY()}));
-					zoomedView.show();
-					views.add(zoomedView);
+				//	Stage zoomedView = getZoomInNewWindow(mapOverlay, new int[]{(int) event.getSceneX(), (int) event.getSceneY()});
+				//	zoomedView.show();
+				//	views.add(zoomedView);
 				}
 			}
 		 });
@@ -399,7 +399,8 @@ public class mapChooserUI extends Application{
 	}
 
 	
-	//will create a map that has the same geography as the geography that was clicked, in a new window.
+	/**will create a map that has the same geography as the geography that was clicked, in a new window**/
+	@Deprecated
 	public Stage getZoomInNewWindow(MapOverlay mapOverlay, int[] mouseCoord){
 	    Stage primaryStage = new Stage();
 		Group root = new Group();
@@ -419,6 +420,4 @@ public class mapChooserUI extends Application{
 	public static void main(String[] args) {
 		launch(args);
 	}
-
-
 }

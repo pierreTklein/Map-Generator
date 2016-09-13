@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
+import Biomes.Biome;
 import agents.Sprite;
 import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
@@ -33,6 +34,7 @@ public class MapOverlay {
 	public MapOverlay(Canvas canvas, Group imvGrp){
 		this.setCanvas(canvas);
 		this.setCurrentCoord(new double[] {0,0});
+		this.updateCanvas(currentScale);
 		this.imvGrp = imvGrp;
 		this.createSpritesOnMap();
 	}
@@ -42,6 +44,7 @@ public class MapOverlay {
 		this.setMap(map);
 		this.setCanvas(canvas);
 		this.setCurrentCoord(new double[] {0,0});
+		this.updateCanvas(currentScale);
 		this.imvGrp = imvGrp;
 		this.createSpritesOnMap();
 	}
@@ -62,7 +65,7 @@ public class MapOverlay {
 		this.clearMap();
 		this.map = new Map(this.map.getWaterLevel(),this.map.getMoistureLevel());
 		this.createSpritesOnMap();
-		updateCanvas(defaultScale);
+		updateCanvas(currentScale);
 
 	}
 	public void clearMap(){
@@ -100,7 +103,7 @@ public class MapOverlay {
 		if(scaling || scale == currentScale){
 	//		this.map.generateMapWithBiome((float)coord[1], (float)coord[0], frequency, scale, canvas, GradientType.DISCRETE);
 			this.map.generateMapWithBiome((float)coord[1], (float)coord[0], step, scale, canvas);
-
+			
 			this.currentScale = scale;
 			this.updateSprites();
 		}
@@ -134,23 +137,29 @@ public class MapOverlay {
 		this.scaling = scaling;
 	}
 
-
+	@Deprecated
 	public Canvas getZoomedInView(int[] mouseCoord){
-		int zoomFactor = 4;
+		int zoomFactor = 1;
 		Canvas zoomed = new Canvas(500,500);
-	//	map.generateMapWithBiome((float)(mouseCoord[1]+coord[1]-zoomed.getHeight()/(2*zoomFactor))*(frequency), (float)(mouseCoord[0]+coord[0]-zoomed.getWidth()/(2*zoomFactor))*(frequency), frequency/zoomFactor, currentScale, zoomed,GradientType.DISCRETE);
-		map.generateMapWithBiome((float)(mouseCoord[1]+coord[1]-zoomed.getHeight()/(2*zoomFactor))*(step), (float)(mouseCoord[0]+coord[0]-zoomed.getWidth()/(2*zoomFactor))*(step), step/zoomFactor, currentScale, zoomed);
+		int[] worldCoord = getMouseCoordInWorld(mouseCoord);
+		invertCoords(worldCoord);
+		worldCoord[0] = (int) (worldCoord[0]-zoomed.getHeight() * (currentScale / (2* zoomFactor)));
+		worldCoord[1] = (int) (worldCoord[1]-zoomed.getWidth() * (currentScale / (2* zoomFactor)));
 
+		map.generateMapWithBiome(worldCoord[0], worldCoord[1], step, currentScale/zoomFactor, zoomed);
 		return zoomed;
 	}
+	/**THESE METHODS ARE FOR FIGURING OUT WHERE THE MOUSE IS / WHAT THE BIOME IS**/
 	public int[] getMouseCoordInWorld(int[] mouseCoord){
 		int x = (int) (getCurrentCoord()[0] + mouseCoord[0]* getCurrentScale());
 		int y = (int) (getCurrentCoord()[1] + mouseCoord[1]* getCurrentScale());
 		return new int[]{x,y};
 	}
+
 	//use this if you are using in-world coordinates
 	public String getBiomeNameWORLD_COORDS(int[] coords){
-		Biome b = map.getBiomeAtCoord(coords, step,currentScale);
+		invertCoords(coords);
+		Biome b = map.getBiomeAtCoord(coords, step);
 		if(b == null){
 			System.out.println(Arrays.toString(coords));
 			return "BIOME ERROR";
@@ -159,15 +168,44 @@ public class MapOverlay {
 			return b.getName();
 		}
 	}
+	public void invertCoords(int[] coords){
+		int temp = coords[0];
+		coords[0] = coords[1];
+		coords[1] = temp;
+	}
 
 	//use this if you are using regular coordinates
 	public String getBiomeNameREG_COORDS(int[] mouseCoord){
 		int[] coords = getMouseCoordInWorld(mouseCoord);
-		Biome b = map.getBiomeAtCoord(coords, step, currentScale);
+		invertCoords(coords);
+		Biome b = map.getBiomeAtCoord(coords, step);
 		return b.getName();
 	}
 	
-	/**The next methods involve moving around the map!**/
+	public Biome getBiomeAtCoords(int[] coords){
+		invertCoords(coords);
+		Biome b = map.getBiomeAtCoord(coords, step);
+		if(b == null){
+			System.out.println(Arrays.toString(coords));
+			return null;
+		}
+		else{
+			return b;
+		}
+	}
+	public String getHabitableAtCoords(int[] coords){
+		Biome b = getBiomeAtCoords(coords);
+		if(b == null){
+			System.out.println(Arrays.toString(coords));
+			return "BIOME ERROR";
+		}
+		else{
+			return String.valueOf(b.isHabitable());
+		}
+
+	}
+	
+	/**THE NEXT METHODS INVOLVE MOVING AROUND THE MAP**/
 	public void moveRight(){
 		if(translation){
 			coord[0] += this.canvas.getWidth() * currentScale * moveFactor;
@@ -175,17 +213,8 @@ public class MapOverlay {
 		}
 	}
 	public void moveLeft(){
-		if(translation){
-			if(coord[0] - this.canvas.getWidth() * currentScale * moveFactor >= 0){
-				coord[0] -= this.canvas.getWidth() * currentScale * moveFactor;
-				updateCanvas(currentScale);
-			}
-			else{
-				coord[0] = 0;
-				updateCanvas(currentScale);
-			}
-
-		}
+		coord[0] -= this.canvas.getWidth() * currentScale * moveFactor;
+		updateCanvas(currentScale);
 	}
 	public void moveDown(){
 		if(translation){
@@ -194,16 +223,9 @@ public class MapOverlay {
 		}
 	}
 	public void moveUp(){
-		if(translation){
-			if(coord[1] - this.canvas.getHeight() * currentScale * moveFactor >= 0){
-				coord[1] -= this.canvas.getHeight() * currentScale * moveFactor;
-				updateCanvas(currentScale);
-			}
-			else{
-				coord[1] = 0;
-				updateCanvas(currentScale);
-			}
-		}
+		coord[1] -= this.canvas.getHeight() * currentScale * moveFactor;
+		updateCanvas(currentScale);
+
 	}
 
 	/**THE METHODS BELOW THIS LINE PERTAIN TO SPRITE FUNCTIONS**/
@@ -212,11 +234,26 @@ public class MapOverlay {
 		Image image = null;
 		try {
 			for(int i = 0; i < 100; i++){
-				path = new FileInputStream("resources/houses/office-building-" + ((int)(Math.random() * 5) + 1) + ".png");
+				path = new FileInputStream("resources/houses/residential-" + ((int)(Math.random() * 5) + 1) + ".png");
 				image = new Image(path);
 				double randomX = map((float)Math.random(),0,1,(float)coord[0],(float)this.getLRCoord()[0]);
 				double randomY = map((float)Math.random(),0,1,(float)coord[1],(float)this.getLRCoord()[1]);
-				Sprite house = new Sprite(image, new double[] {randomX, randomY}, new double[]{50,50});
+				Sprite house = new Sprite(image, new double[] {randomX, randomY}, new double[]{50,50});	
+				/*boolean locationFound = false;
+				int tries = 0;
+				while(!locationFound && tries < 10){
+					Biome lowerLeftCorner = map.getBiomeAtCoord(house.getLowerLeft(),step);
+					Biome lowerRightCorner = map.getBiomeAtCoord(house.getLowerRight(), step);
+					if(lowerLeftCorner.isHabitable() && lowerRightCorner.isHabitable()){
+						sprites.add(house);
+						locationFound = true;
+					}
+					else{
+						randomX = map((float)Math.random(),0,1,(float)coord[0],(float)this.getLRCoord()[0]);
+						randomY = map((float)Math.random(),0,1,(float)coord[1],(float)this.getLRCoord()[1]);
+						tries++;
+					}
+				}*/
 				sprites.add(house);
 			}
 			updateSprites();

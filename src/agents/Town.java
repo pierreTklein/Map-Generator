@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import javafx.scene.image.Image;
+import mapChooser.Map;
 import physics.Vector;
 //THANKS TO FREEPIK FOR THEIR GRAPHICS
 public class Town {
@@ -16,7 +17,14 @@ public class Town {
 	private int population = 0;
 	private String name = "";
 	//Towns have 20% office, and 80% residential 
-	public Town(double[] location) {
+	public Town(Map map){
+		
+		randomBuildings();
+		setTownHall();
+		randomName();
+
+	}
+	public Town( double[] location) {
 		setLocation(new Vector(location));
 		randomBuildings();
 		setTownHall();
@@ -39,7 +47,13 @@ public class Town {
 			hasTownHall = true;
 		}
 	}
-	public void randomBuildings(){
+	private void setRandomLocation(){
+		
+	}
+	
+	
+	
+	private void randomBuildings(){
 		for(int i = 0; i < 50; i++){
 			double[] newLocation = location.getVals();
 			int neg = 1;

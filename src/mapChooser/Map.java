@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.util.Random;
 
+import Biomes.Biome;
+import Biomes.BiomeMap;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
@@ -17,10 +19,16 @@ public class Map implements Serializable{
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	/**Map elevation & biome generators:**/
+	/**elevation generator**/
 	private PerlinNoiseGenerator elevationNoise = new PerlinNoiseGenerator();
+	/**moisture generator**/
 	private PerlinNoiseGenerator moistureNoise = new PerlinNoiseGenerator();
-	private final BiomeMap biomeMap = new BiomeMap();
+	/**biome map that defines what combinations of elevation and moisture are which biome.**/
+	private final BiomeMap biomeMap = new BiomeMap();	
+
+	/**Town generator**/
+	//TODO: Add a town generator
+	
 	
 	/**Offset for more or less water (should be between **/
 	private float waterLevel;
@@ -29,8 +37,8 @@ public class Map implements Serializable{
 	/**Offset for more or less Moisture**/
 	private float moistureLevel;
 	private float meanMoistureLevel = (float) 3;
-
-	/**Number of frequencies this map contains, which is a factor on how clear the map looks**/
+	
+	/**Number of frequencies of the same noise this map contains. Contributing factor to terrain shape.**/
 	private final float frequencies = 20;
 	
 		
@@ -112,7 +120,7 @@ public class Map implements Serializable{
 		return meanMoistureLevel;
 	}
 
-	//transfer values from "from" to "to"
+	/**transfer map values from map named "from" to map named "to"**/
 	public static void transferValues(Map from, Map to){
 		to.setMoistureNoise(from.getMoistureNoise());
 		to.setElevationNoise(from.getElevationNoise());
@@ -122,20 +130,26 @@ public class Map implements Serializable{
 		to.setMeanWaterLevel(from.getMeanWaterLevel());
 	}
 	
-	/**THESE NEXT METHODS ESSENTIALLY TRANSLATE THE ABOVE VARIABLES TO GRAPHICS**/
+	/**THESE NEXT METHODS ESSENTIALLY TRANSLATE THE ABOVE VARIABLES TO GRAPHICS*/
+	 /** Paint the given canvas using the given perlin noise generators and their respective settings.
+	 * @param xStart	is the "in-world" x-value you want to start the mapping at.
+	 * @param yStart	is the "in-world" y-value you want to start the mapping at. 
+	 * @param step	is how large of a step you want each pixel to be from each other. USUALLY CONSTANT.
+	 * @param scale	is how much you want to scale each step by.
+	 * @param mapCanvas is the canvas you will draw the resultant map on.*/
 	public void generateMapWithBiome(float xStart, float yStart, float step, float scale, Canvas mapCanvas){
 		GraphicsContext gc = mapCanvas.getGraphicsContext2D();
 		PixelWriter writer = gc.getPixelWriter();
 		float[][] elevation = generateVals(xStart, yStart, step, scale, elevationNoise, waterLevel, mapCanvas);
+	
 		float ml = (10 - moistureLevel);
 		ml = (float) (ml < 0.1 ? 0.1 : ml);
-
 		float[][] moisture = generateVals(xStart, yStart, step, scale, moistureNoise, ml, mapCanvas);
 		for(int i = 0; i < mapCanvas.getHeight(); i++){
 			for(int j = 0; j < mapCanvas.getWidth(); j++){
+				//Color c =greyScale(elevation[i][j]);
 				Color c = getColor(elevation[i][j],moisture[i][j]);
 				writer.setColor(i, j, c);
-
 			}
 		}
 	}
@@ -145,7 +159,9 @@ public class Map implements Serializable{
 	//xStart marks the point in the noise where we start recording x-values
 	//yStart marks the point in the noise where we start recording y-values
 	//step is the separation between each noise value is
-	@Deprecated
+	
+	/**Doesn't use the built-in biome generator (relies on graphics). Method and it's resources will be removed in the future.**/
+	@Deprecated 
 	public void generateMapWithBiome(float xStart, float yStart, float step, float scale, Canvas mapCanvas, GradientType gradientType){
 		GraphicsContext gc = mapCanvas.getGraphicsContext2D();
 		PixelWriter writer = gc.getPixelWriter();
@@ -179,15 +195,24 @@ public class Map implements Serializable{
 				if(found){
 					c = setBiome(elevation[i][j],moisture[i][j],biomeMap);
 				} else{
-					c = colored(elevation[i][j]);
+					c = Color.hsb(120, elevation[i][j], 1, 1);
+
 
 				}
 				writer.setColor(i, j, c);
 			}
 		}
 	}
+	/**Writes the numeric 2D noise values for a given noise generator.
+	 * @param xStart	is the x-value of the start of the 2D noise generation
+	 * @param yStart	is the y-value of the start of the 2D noise generation
+	 * @param step	is how large of a step you want each pixel to be from each other. USUALLY CONSTANT.
+	 * @param scale	is how much you want to scale each step by.
+	 * @param noise is the perlin noise generator we are reading.
+	 * @param offset	is the weight we want to pull the noise by. 0 < offset < 1 pulls value up, whereas offset > 1 pulls value down.
+	 * @param mapCanvas	is the canvas the numbers will be painted on. Used in this method only for its dimensions.
+	 **/
 	private float[][] generateVals(float xStart, float yStart, float step, float scale, PerlinNoiseGenerator noise, float offset, Canvas mapCanvas){
-		System.out.println(scale);
 		float[][] vals = new float[(int) mapCanvas.getWidth()][(int) mapCanvas.getHeight()];
 		float xOff = xStart*step;
 		float yOff = yStart*step;
@@ -195,23 +220,35 @@ public class Map implements Serializable{
 		for(int i = 0; i < mapCanvas.getHeight(); i++){
 			xOff = xStart*step;
 			for(int j = 0; j < mapCanvas.getWidth(); j++){
-				float n = getMappedNoise(xOff,yOff,noise,offset,scale);
+				float n = getMappedNoise(xOff,yOff,noise,offset);
 				vals[i][j] = n;
 				xOff+=step*scale;
 			}
 			yOff+= step*scale;
 		}
-		System.out.println(xOff + "	" + yOff + "\n---------" );
+//		System.out.println(xOff + "	" + yOff + "\n---------" );
 		return vals;
 
 	}
-	private float getMappedNoise(float x,float y,PerlinNoiseGenerator noise, float offset, float scale){
-		float n = getNoise(x,y,noise,scale);
+	/**Returns noise that has been offset by a constant. Given coordinates x,y, and a constant "offset", .
+	 * @param x	is the x coordinate of the noise value
+	 * @param y is the y coordinate of the noise value
+	 * @param noise is the perlin noise generator
+	 * @param offset is the offset value.
+**/
+	private float getMappedNoise(float x,float y,PerlinNoiseGenerator noise, float offset){
+		float n = getNoise(x,y,noise);
 		n = map(n, -1,1,0,1);
 		n = (float) Math.pow(n,offset);
 		return n;
 	}
-	private float getNoise(float x, float y, PerlinNoiseGenerator noise, float scale){
+	
+	/**Returns noise, Given coordinates x,y.
+	 * @param x	is the x coordinate of the noise value
+	 * @param y is the y coordinate of the noise value
+	 * @param noise is the perlin noise generator
+	 **/
+	private float getNoise(float x, float y, PerlinNoiseGenerator noise){
 		float n = 0;
 		//how important each frequency is:
 		float weight = 1;
@@ -224,23 +261,26 @@ public class Map implements Serializable{
 		}
 		return n;
 	}
-	//e must be between 0 and 1.
+	/**Note: e and m must be between 0 and 1. Otherwise, they will be capped to either 0 or 1.**/
 	private Color getColor(float e, float m){
-		return getBiome(e, m).getColor();
+		return biomeMap.getColor(e, m);
 
 	}
-	//e must be between 0 and 1.
+	
+	/**Note: e and m must be between 0 and 1. Otherwise, they will be capped to either 0 or 1.**/
 	private Biome getBiome(float e, float m){
 		return biomeMap.getBiome(e, m);
 	}
-
-	public Biome getBiomeAtCoord(int[] coord, float step, float scale){
+	/**Returns the biome object at a given coordinate. The Step is a constant.**/
+	public Biome getBiomeAtCoord(int[] coord, float step){
 		float x = coord[0] * step;
 		float y = coord[1] * step;
-		float e = getMappedNoise(x,y,elevationNoise,waterLevel, scale);
+		float e = getMappedNoise(x,y,elevationNoise,waterLevel);
+		float ml = (10 - moistureLevel);
+		ml = (float) (ml < 0.1 ? 0.1 : ml);
 
-		float m = getMappedNoise(x,y,moistureNoise, moistureLevel, scale);
-
+		float m = getMappedNoise(x,y,moistureNoise, ml);
+		//System.out.println(x + " "  + y + "|" + e + " " + m);
 		return getBiome(e,m);
 	}
 	@Deprecated
@@ -264,7 +304,7 @@ public class Map implements Serializable{
 
 			}
 			else{
-				return colored(elevation);
+				return Color.hsb(120, elevation, 1, 1);
 			}			
 		}
 		catch (IndexOutOfBoundsException e){
@@ -273,21 +313,11 @@ public class Map implements Serializable{
 			int height = (int) biomeMap.getHeight();
 			System.out.println(map(elevation,0,1,0,height-1));
 			System.out.println(map(moisture,0,1,0,width-1));
-			return colored(elevation);
+			return Color.hsb(120, elevation, 1, 1);
 
 		}
 	}
-	
-	private Color colored(float n){
-
-		if(n < 0){
-			return Color.hsb(230,  (Math.abs(n)), 1, 1);
-		}
-		else{
-			return Color.hsb(120, n, 1, 1);
-		}
-	}
-	
+		
 	private Color greyScale(float n){
 		float greyScale = n; //map(n,-1,1,0,1);
 		return Color.gray(greyScale, 1);
@@ -300,5 +330,8 @@ public class Map implements Serializable{
 		float newValue = (newHigh-newLow) * scale + newLow; //(D-C) * ((X-A)/(B-A)) + C 
 		return newValue;
 	}
+	
+	
+	/****/
 
 }
