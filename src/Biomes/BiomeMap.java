@@ -33,6 +33,7 @@ public class BiomeMap {
 		biomes.add(grassland);
 		Biome sub_tropical_desert = new Biome(Color.rgb(210, 185, 138),new double[]{elevation2,elevation3}, new double[]{0,grassland.getMinMoisture()},true, "SUB TROPICAL DESERT");
 		biomes.add(sub_tropical_desert);
+		
 		//elevation level 4:
 		double elevation4 = 0.66;
 		Biome temperate_rain_forest = new Biome(Color.rgb(68,136,85),new double[]{elevation3,elevation4}, new double[]{0.83,1}, true,"TEMPERATE RAIN FOREST");

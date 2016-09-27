@@ -36,6 +36,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import map.Map;
+import map.MapOverlay;
 
 public class mapChooserUI extends Application{
 	public void start(Stage primaryStage) throws Exception {

@@ -1,9 +1,11 @@
 package agents;
 
+import java.io.FileInputStream;
 import java.util.ArrayList;
 
 import javafx.scene.Group;
 import javafx.scene.image.Image;
+import physics.Node;
 import physics.Vector;
 
 public class Road extends Sprite{
@@ -18,7 +20,11 @@ public class Road extends Sprite{
 	/**Type of road**/
 	private RoadType roadType;
 	
-	
+	/**@param image the image of the road
+	 * @param location the location of intersection 1 of the road
+	 * @param dimensions the dimensions of the image
+	 * @param length the vector containing the length of the road
+	 * @param roadType the type of road the road is (small, medium, large)**/
 	public Road(Image image, double[] location, double[] dimensions, Vector length, RoadType roadType) {
 		super(image, location, dimensions);
         getImv().setPreserveRatio(false);
@@ -51,6 +57,16 @@ public class Road extends Sprite{
 			other.addRoad1(this);
 		}
 	}
+	public void addNewRoad1(Image image, Vector length, RoadType roadType){
+		Road newRoad = new Road(image,this.getIntersection1Coords(),super.getDimensions(),length,roadType);
+		this.addRoad1(newRoad);
+	}
+	public void addNewRoad2(Image image, Vector length, RoadType roadType){
+		Road newRoad = new Road(image,this.getIntersection2Coords(),super.getDimensions(),length,roadType);
+		this.addRoad2(newRoad);
+	}
+
+	
 	public ArrayList<Road> getIntersection1(){
 		return intersection1;
 	}
@@ -107,6 +123,7 @@ public class Road extends Sprite{
 		return Vector.add(this.getLocation(), this.getLength()).getVals();
 	}
 	@Override
+	/**Scales and rotates the image**/
 	public void scaleImv(float scale){
 		getImv().setFitWidth(scale * this.length.getMagnitude());
 		try {

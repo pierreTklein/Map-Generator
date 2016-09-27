@@ -3,28 +3,34 @@ package agents;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.PriorityQueue;
 
 import javafx.scene.image.Image;
-import mapChooser.Map;
+import map.Map;
 import physics.Vector;
 //THANKS TO FREEPIK FOR THEIR GRAPHICS
 public class Town {
 	/**Graphics, physics**/
 	private ArrayList<Building> buildings = new ArrayList<Building>();
+	private Road rootRoad; // the root of all of the roads that exist in this town
 	private boolean hasTownHall = false;
-	private Vector location;
+	private Vector location; //town center
+	private Map map;
 	/**Variables that have to do with statistics**/
 	private int population = 0;
 	private String name = "";
 	//Towns have 20% office, and 80% residential 
 	public Town(Map map){
-		
+		this.setMap(map);
 		randomBuildings();
 		setTownHall();
 		randomName();
 
 	}
-	public Town( double[] location) {
+	public Town(double[] location, Map map) {
+		this.setMap(map);
 		setLocation(new Vector(location));
 		randomBuildings();
 		setTownHall();
@@ -38,6 +44,10 @@ public class Town {
 				FileInputStream path = new FileInputStream("resources/houses/government-1.png");
 				image = new Image(path);
 				type = BuildingType.Governmental;
+				
+				path = new FileInputStream("resources/houses/straight-road-cropped.png");
+				image = new Image(path);
+				rootRoad = new Road(image,location.getVals(),new double[]{image.getWidth(),image.getHeight()}, new Vector(location.getVals(), new double[] {location.getVals()[0]+10,location.getVals()[1]}),RoadType.Small);
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -47,12 +57,77 @@ public class Town {
 			hasTownHall = true;
 		}
 	}
-	private void setRandomLocation(){
-		
+	public void setRoadAtCoord(double[] coords, Vector length){
+		FileInputStream path;
+		Image image = null;
+		try {
+			path = new FileInputStream("resources/houses/straight-road-cropped.png");
+			image = new Image(path);
+			Road connectingRoad = findRoad(new Vector(coords));
+			connectingRoad.addNewRoad2(image, length, RoadType.Small);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
+	/**Use A* algorithm to find the path from one point to another using roads**/
+	public Road findRoad(Vector end){
+		Road start = rootRoad;
+	    // The set of nodes already evaluated.
+		HashSet<Road> closedSet = new HashSet<Road>();
+	    // The set of currently discovered nodes still to be evaluated.
+	    // Initially, only the start node is known.
+		Comparator<Road> comparator = new Comparator<Road>(){
+
+			@Override
+			public int compare(Road o1, Road o2) {
+				// TODO Auto-generated method stub
+				double score1 = findScore(o1, end);
+				double score2 = findScore(o2, end);
+				if(score1 > score2){
+					return 1;
+				}
+				else if(score1 < score2){
+					return -1;
+				}
+				else{
+					return 0;
+				}
+			}
+		
+		};
+		PriorityQueue<Road> openSet = new PriorityQueue<Road>(comparator);
+		openSet.add(start);
+
+		Road bestRoad = start;
+		while(!openSet.isEmpty()){
+			Road curRoad = openSet.poll();
+			
+			double curScore = findScore(curRoad, end);
+			if(curScore == 0){
+				return curRoad;
+			}
+			if(curScore < findScore(bestRoad,end)){
+				bestRoad = curRoad;
+			}
+			ArrayList<Road> neighbors = curRoad.getIntersection2();
+			for(Road n : neighbors){
+				openSet.add(n);
+			}
+			closedSet.add(curRoad);
+		}
+		return bestRoad;
+	}
+	public double findScore(Road curRoad, Vector goal){
+		return findScore(new Vector(curRoad.getIntersection2Coords()), goal);
+	}
 	
-	
+	public double findScore(Vector current, Vector goal){
+		double score = Vector.sub(current, goal).getMagnitude();
+		return score;
+	}
+		
 	private void randomBuildings(){
 		for(int i = 0; i < 50; i++){
 			double[] newLocation = location.getVals();
@@ -108,6 +183,18 @@ public class Town {
 	}
 	public void setLocation(Vector location) {
 		this.location = location;
+	}
+	/**
+	 * @return the map
+	 */
+	public Map getMap() {
+		return map;
+	}
+	/**
+	 * @param map the map to set
+	 */
+	public void setMap(Map map) {
+		this.map = map;
 	}
 	public int getPopulation() {
 		return population;
